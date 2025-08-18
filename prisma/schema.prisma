@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String           @id @default(uuid())
+  clerkUserId            String           @unique     //clerk user id
+  email                  String           @unique
+  name                   String?
+  imageUrl               String?
+  industry               String?       //Combined industry-subindustry(e.g. "tech-software-development")
+  industryInsights       IndustryInsights?  @relation(fields: [industry], references: [industry])
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  //Profile fields
+  bio                    String?
+  experience             Int? 
+  skills                 String[]
+
+  assessments            Assessment[]
+  resume                 Resume?
+  coverLetter            CoverLetter[]
+}
+
+model Assessment{
+  id                    String                @id  @default(uuid())
+  userId                String 
+  user                  User                  @relation(fields: [userId], references: [id])
+  quizScore             Float
+  questions             Json[]                 //Array of qsns, answers, userAnswer, correct 
+  category              String
+  improvementTip        String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+
+  @@index([userId])
+}
+
+
+//can add these also in resume ,   atsScore              Float?
+  //                               feedback              String?
+model Resume{
+  id                    String                @id  @default(uuid())
+  userId                String                 @unique
+  user                  User                  @relation(fields: [userId], references: [id])
+  content               String                @db.Text  //MarkDown content
+
+  // NEW ATS fields - ALL OPTIONAL
+  atsScore              Float?                // ATS score out of 100 (optional)
+  atsAnalysis           ATSAnalysis?          // Detailed analysis (optional)
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+}
+
+// New model for ATS analysis - also optional relationship
+model ATSAnalysis {
+  id                    String                @id  @default(uuid())
+  resumeId              String                @unique
+  resume                Resume                @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  // Score breakdown
+  overallScore          Float
+  keywordScore          Float
+  formatScore           Float
+  sectionScore          Float
+  
+  // Analysis results
+  matchedKeywords       String[]              // Keywords found in resume
+  missingKeywords       String[]              // Important keywords missing
+  improvementTips       String[]              // AI suggestions
+  strengths             String[]              // What's good
+  weaknesses            String[]              // What needs improvement
+  
+  // Job matching - all optional since users might analyze without job description
+  jobDescription        String?               // Job description used for analysis (optional)
+  jobTitle              String?               // Target job title (optional)
+  industry              String?               // Target industry (optional)
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}
+
+model CoverLetter{
+  id                    String                @id  @default(uuid())
+  userId                String               
+  user                  User                  @relation(fields: [userId], references: [id])
+  content               String                 //MarkDown content
+  jobDescription        String?
+  companyName           String
+  jobTitle              String
+  
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@index([userId])
+}
+
+model IndustryInsights{
+  id                    String                @id  @default(uuid())
+  industry              String                @unique 
+
+  //users in inndustry
+  users                 User[]
+
+  //salary data
+  salaryRanges          Json[]      //Array of {role: string, min: float , max: float etc}
+
+  //Industry trends
+  growthRate            Float
+  demandLevel           DemandLevel
+  topSkills             String[]
+
+  //Market Conditions
+  marketOutlook         MarketOutlook
+  keyTrends             String[]
+
+  //learning suggestions
+  recommendedSkills     String[]
+
+  lastUpdated           DateTime   @default(now())
+  nextUpdate            DateTime   //scheduled update DateTime
+
+  @@index([industry])
+
+}
+
+
+enum DemandLevel {
+  HIGH 
+  MEDIUM 
+  LOW 
+}
+
+enum MarketOutlook {
+  POSITIVE 
+  NEUTRAL
+  NEGATIVE
+}
