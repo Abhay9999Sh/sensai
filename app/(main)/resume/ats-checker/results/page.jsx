@@ -256,17 +256,6 @@ export default function ATSResultsPage() {
                   <div className="space-y-6">
                     {Object.entries(analysis.sectionAnalysis).map(
                       ([sectionName, section]) => {
-                        // Only show sections that have specific, actionable issues
-                        const hasActionableIssues = section.improvements?.some(
-                          (improvement) =>
-                            improvement.includes("Add") ||
-                            improvement.includes("Include") ||
-                            improvement.includes("Quantify") ||
-                            improvement.includes("specific")
-                        );
-
-                        if (!hasActionableIssues) return null;
-
                         return (
                           <div
                             key={sectionName}
@@ -276,68 +265,143 @@ export default function ATSResultsPage() {
                               <h4 className="font-semibold text-lg capitalize">
                                 {sectionName.replace(/([A-Z])/g, " $1").trim()}
                               </h4>
+                              <div className="flex items-center gap-2">
+                                {section.present ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <XCircle className="h-5 w-5 text-red-600" />
+                                )}
+                                <Badge
+                                  className={`${getScoreBadge(section.score || 0)} text-xs`}
+                                >
+                                  {section.score || 0}%
+                                </Badge>
+                              </div>
                             </div>
 
-                            {/* Show current content if exists */}
-                            {section.content &&
-                              section.content.trim() !== "" && (
-                                <div className="mb-4">
-                                  <h5 className="text-sm font-medium text-muted-foreground mb-2">
-                                    Current Content:
-                                  </h5>
-                                  <div className="text-sm bg-muted p-3 rounded border">
-                                    {section.content}
+                            {/* Section Status */}
+                            <div className="mb-4">
+                              {!section.present ? (
+                                <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                                      Section Missing
+                                    </p>
+                                    <p className="text-xs text-red-600 dark:text-red-300 mt-1">
+                                      This section is completely missing from your resume and needs to be added.
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (section.improvements && section.improvements.length > 0) || (section.missing && section.missing.length > 0) ? (
+                                <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                                  <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                      Section Needs Improvement
+                                    </p>
+                                    <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                                      This section is present but has specific areas that need optimization for better ATS compatibility.
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                      Section Complete
+                                    </p>
+                                    <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                                      This section is well-optimized and does not need major improvements right now.
+                                    </p>
                                   </div>
                                 </div>
                               )}
+                            </div>
 
-                            {/* Show specific, actionable improvements */}
-                            <div className="space-y-3">
-                              <h5 className="text-sm font-medium">
-                                Specific Improvements Needed:
-                              </h5>
-                              {section.improvements
-                                ?.filter(
-                                  (improvement) =>
-                                    improvement.includes("Add") ||
-                                    improvement.includes("Include") ||
-                                    improvement.includes("Quantify") ||
-                                    improvement.includes("specific")
-                                )
-                                .slice(0, 3)
-                                .map((improvement, index) => (
+                            {/* Missing Items */}
+                            {section.missing && section.missing.length > 0 && (
+                              <div className="mb-4">
+                                <h5 className="text-sm font-medium text-red-600 mb-2">
+                                  Missing Required Items:
+                                </h5>
+                                <div className="flex flex-wrap gap-2">
+                                  {section.missing.map((item, index) => (
+                                    <Badge
+                                      key={index}
+                                      variant="destructive"
+                                      className="text-xs"
+                                    >
+                                      {item}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Specific Improvements */}
+                            {section.improvements && section.improvements.length > 0 && (
+                              <div className="space-y-3">
+                                <h5 className="text-sm font-medium">
+                                  Specific Improvements Needed:
+                                </h5>
+                                {section.improvements.map((improvement, index) => (
                                   <div
                                     key={index}
                                     className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg"
                                   >
                                     <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                                    <div>
+                                    <div className="flex-1">
                                       <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                                         {improvement}
                                       </p>
-                                      {/* Add specific examples based on improvement type */}
-                                      {improvement.includes("Quantify") && (
+                                      {/* Add specific examples based on improvement content */}
+                                      {(improvement.toLowerCase().includes("quantify") || 
+                                        improvement.toLowerCase().includes("metrics") ||
+                                        improvement.toLowerCase().includes("numbers")) && (
                                         <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
-                                          Example: "Increased performance by
-                                          40%" or "Handled 1000+ concurrent
-                                          users"
+                                          Example: "Increased performance by 40%" or "Handled 1000+ concurrent users"
                                         </p>
                                       )}
-                                      {improvement.includes("LinkedIn") && (
+                                      {improvement.toLowerCase().includes("linkedin") && (
                                         <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
                                           Add: linkedin.com/in/yourprofile
                                         </p>
                                       )}
-                                      {improvement.includes("portfolio") && (
+                                      {(improvement.toLowerCase().includes("portfolio") || 
+                                        improvement.toLowerCase().includes("github")) && (
                                         <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
-                                          Add: yourname.github.io or
-                                          yourportfolio.com
+                                          Add: yourname.github.io or yourportfolio.com
+                                        </p>
+                                      )}
+                                      {improvement.toLowerCase().includes("gpa") && (
+                                        <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                                          Include only if GPA is 3.5 or higher
+                                        </p>
+                                      )}
+                                      {improvement.toLowerCase().includes("coursework") && (
+                                        <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                                          List 3-4 most relevant courses to the job description
                                         </p>
                                       )}
                                     </div>
                                   </div>
                                 ))}
-                            </div>
+                              </div>
+                            )}
+
+                            {/* If section is complete and truly has no issues, show positive feedback */}
+                            {section.present && 
+                             (!section.improvements || section.improvements.length === 0) && 
+                             (!section.missing || section.missing.length === 0) && (
+                              <div className="text-center py-4">
+                                <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                                <p className="text-sm text-green-600 font-medium">
+                                  This section is well-optimized! No immediate improvements needed.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         );
                       }

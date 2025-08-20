@@ -39,7 +39,7 @@ export default function ATSUploadZone({ onFileUpload, uploadedFile }) {
       "application/pdf": [".pdf"],
     },
     maxFiles: 1,
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 4 * 1024 * 1024, // 5MB
     onDragEnter: () => setDragActive(true),
     onDragLeave: () => setDragActive(false),
   });

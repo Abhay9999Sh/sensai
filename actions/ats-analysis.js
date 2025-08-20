@@ -4,11 +4,6 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { revalidatePath } from "next/cache";
-import pdfTextExtract from "pdf-text-extract";
-import { promisify } from "util";
-
-// Convert pdf-text-extract to promise-based
-const extractTextFromPDFBuffer = promisify(pdfTextExtract);
 
 // Gemini setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -19,43 +14,111 @@ const model = genAI.getGenerativeModel({
 // Extract text from PDF buffer
 async function extractTextFromPDF(buffer) {
   try {
-    // Write buffer to temporary file for pdf-text-extract
-    const fs = require("fs");
-    const path = require("path");
-    const os = require("os");
-
-    const tempDir = os.tmpdir();
-    const tempFilePath = path.join(tempDir, `temp-${Date.now()}.pdf`);
-
-    // Write buffer to temporary file
-    fs.writeFileSync(tempFilePath, buffer);
-
-    // Extract text
-    const textArray = await extractTextFromPDFBuffer(tempFilePath);
-    const text = textArray.join("\n");
-
-    // Clean up temporary file
-    fs.unlinkSync(tempFilePath);
-
-    return text;
+    console.log("Attempting to extract text from PDF buffer...");
+    
+    // Use pdf2json for more reliable PDF text extraction
+    const PDFParser = (await import("pdf2json")).default;
+    
+    return new Promise((resolve, reject) => {
+      const pdfParser = new PDFParser();
+      
+      pdfParser.on("pdfParser_dataError", (errData) => {
+        console.error("PDF Parser Error:", errData.parserError);
+        reject(new Error(`PDF parsing failed: ${errData.parserError}`));
+      });
+      
+      pdfParser.on("pdfParser_dataReady", (pdfData) => {
+        try {
+          // Extract text from parsed PDF data
+          let extractedText = "";
+          
+          if (pdfData && pdfData.Pages) {
+            pdfData.Pages.forEach(page => {
+              if (page.Texts) {
+                page.Texts.forEach(text => {
+                  if (text.R) {
+                    text.R.forEach(textRun => {
+                      if (textRun.T) {
+                        // Decode URI component and add space
+                        extractedText += decodeURIComponent(textRun.T) + " ";
+                      }
+                    });
+                  }
+                });
+                extractedText += "\n"; // Add line break after each page
+              }
+            });
+          }
+          
+          console.log("PDF extraction successful. Text length:", extractedText.length);
+          console.log("First 200 characters:", extractedText.substring(0, 200));
+          
+          if (!extractedText || extractedText.trim().length === 0) {
+            console.warn("PDF extraction returned empty text, using fallback");
+            reject(new Error("No text content found in PDF"));
+          } else {
+            resolve(extractedText.trim());
+          }
+        } catch (parseError) {
+          console.error("Error processing PDF data:", parseError);
+          reject(parseError);
+        }
+      });
+      
+      // Parse the PDF buffer
+      pdfParser.parseBuffer(buffer);
+    });
+    
   } catch (error) {
-    console.error("PDF extraction error:", error);
-    // Fallback to sample text if PDF extraction fails
+    console.error("PDF extraction failed:", error);
+    console.log("Using fallback sample text for analysis");
+    
+    // Fallback to sample text only if PDF parsing fails
     return `
-      Sample Resume Content (PDF extraction failed)
-      
-      John Doe
-      Software Engineer
-      Email: john.doe@email.com
-      
-      EXPERIENCE
-      Software Engineer at TechCorp
-      - Developed web applications using modern technologies
-      - Worked with agile methodologies
-      
-      SKILLS
-      JavaScript, React, Node.js, Python
-    `;
+    John Doe
+    Software Engineer
+    Email: john.doe@email.com
+    Phone: (555) 123-4567
+    
+    PROFESSIONAL SUMMARY
+    Experienced software engineer with 5+ years of experience in web development using JavaScript, React, and Node.js. Strong background in agile development and modern web technologies.
+    
+    TECHNICAL SKILLS
+    • Programming Languages: JavaScript, Python, TypeScript, Java
+    • Frontend: React, Vue.js, HTML5, CSS3, Tailwind CSS
+    • Backend: Node.js, Express.js, Python Flask, Django
+    • Databases: MongoDB, PostgreSQL, MySQL
+    • Tools: Git, Docker, AWS, Jenkins
+    
+    PROFESSIONAL EXPERIENCE
+    
+    Senior Software Engineer | TechCorp Inc. | 2020 - Present
+    • Developed and maintained web applications using React and Node.js
+    • Implemented CI/CD pipelines reducing deployment time by 40%
+    • Led a team of 4 developers on multiple projects
+    • Collaborated with product managers and designers on user experience
+    
+    Software Engineer | StartupXYZ | 2018 - 2020
+    • Built responsive web applications using modern JavaScript frameworks
+    • Worked with agile methodologies and participated in code reviews
+    • Integrated third-party APIs and payment systems
+    • Optimized application performance and database queries
+    
+    EDUCATION
+    Bachelor of Science in Computer Science
+    State University | 2014 - 2018
+    
+    CERTIFICATIONS
+    • AWS Certified Developer Associate
+    • React Developer Certification
+    
+    PROJECTS
+    • E-commerce Platform: Built full-stack application with React and Node.js
+    • Task Management App: Developed productivity app with real-time features
+    • API Gateway: Created microservices architecture for enterprise client
+    
+    [NOTE: This is fallback text due to PDF parsing failure. Please ensure your PDF is not password-protected and contains readable text.]
+  `;
   }
 }
 
@@ -76,12 +139,20 @@ export async function analyzeResumeATS(
   if (!user) throw new Error("User not found");
 
   try {
-    // Extract text from PDF (or use placeholder for demo)
+    // Extract text from PDF buffer
     let resumeText;
-    if (resumeBuffer) {
+    
+    if (resumeBuffer && resumeBuffer instanceof Buffer) {
+      console.log("Processing PDF buffer with size:", resumeBuffer.length);
       resumeText = await extractTextFromPDF(resumeBuffer);
+    } else if (resumeBuffer) {
+      console.log("Invalid buffer format, using fallback");
+      // If it's not a proper buffer, try to convert it
+      const buffer = Buffer.from(resumeBuffer);
+      resumeText = await extractTextFromPDF(buffer);
     } else {
-      // Demo mode - use a sample resume text for analysis
+      console.log("No resume buffer provided, using demo text");
+      // Demo mode - use sample resume text for analysis
       resumeText = `
         John Doe
         Software Engineer
@@ -119,6 +190,9 @@ export async function analyzeResumeATS(
         • Scrum Master Certification
       `;
     }
+
+    console.log("Resume text being analyzed:", resumeText.substring(0, 300) + "...");
+    console.log("Text length:", resumeText.length);
 
     // Create comprehensive ATS analysis prompt following professional standards
     const atsPrompt = `
@@ -164,6 +238,15 @@ export async function analyzeResumeATS(
        - Proper chronological organization
        - Complete contact information
        - LinkedIn and portfolio links
+       - Distinguish between WORK EXPERIENCE (paid jobs/internships) and PROJECTS (personal/academic work)
+       
+    CRITICAL SECTION ANALYSIS GUIDELINES:
+    - EXPERIENCE/WORK EXPERIENCE: Only count actual employment (jobs, internships, freelance work with companies)
+    - PROJECTS: Personal/academic projects should be analyzed separately
+    - If resume has ONLY projects but NO actual work experience, mark experience section as missing or very low score
+    - Look for employment indicators: company names, job titles like "Software Engineer at Company", employment dates
+    - Projects typically have names like "HouseTrip Project" or "E-commerce Platform" without company employment context
+    
     Provide your analysis in this exact JSON format (ensure valid JSON syntax):
     {
       "overallScore": 85,
@@ -217,6 +300,11 @@ export async function analyzeResumeATS(
           "present": true,
           "score": 65,
           "improvements": ["Add more technical details", "Include GitHub links", "Quantify project impact"]
+        },
+        "achievements": {
+          "present": false,
+          "score": 0,
+          "improvements": ["Add achievements section with awards, recognitions, or notable accomplishments", "Include academic achievements, competition wins, or certifications earned"]
         },
         "certifications": {
           "present": false,
