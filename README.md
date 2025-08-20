@@ -1,4 +1,4 @@
-# 🚀 SENSAI - AI-Powered Career Assistant
+# 🚀 SENSAI - AI-Powered Career Platform
 
 <div align="center">
   <img src="./public/logo.png" alt="SENSAI Logo" width="200" height="200">
@@ -37,11 +37,10 @@
 ### 🎨 **Smart Resume Builder**
 - 📝 AI-powered resume generation and optimization
 - 🎯 Industry-specific templates and suggestions
-- 📊 Real-time ATS compatibility scoring
-- 💾 Multiple format exports (PDF, Word, etc.)
+- 📊 PDF format export and improve with AI in real time
 
 ### 🔍 **ATS Analysis Engine**
-- 🤖 Advanced keyword matching algorithms
+- 🤖 Gemini API use for ATS checker, keyword, content, sections check etc
 - 📈 Comprehensive scoring system (Format, Content, Keywords)
 - 🎯 Job-specific optimization recommendations
 - 📊 Industry benchmarking and insights
@@ -51,6 +50,7 @@
 - 🧠 AI-generated questions based on job descriptions
 - 📝 Personalized feedback and improvement tips
 - 🎯 Role-specific interview scenarios
+- 📋 Quiz for that preparation
 
 ### ✍️ **AI Cover Letter Generator**
 - 📄 Personalized cover letters for specific job applications
@@ -59,7 +59,6 @@
 - 📊 Effectiveness scoring and suggestions
 
 ### 📊 **Career Dashboard**
-- 📈 Application tracking and analytics
 - 🎯 Industry insights and trends
 - 📊 Skill gap analysis
 - 🔔 Job market updates and recommendations
@@ -73,7 +72,6 @@
 - 🚀 **Next.js 15** - App Router, Server Actions, and Turbopack
 - 🎨 **Tailwind CSS** - Utility-first styling
 - 🎯 **Radix UI** - Accessible component primitives
-- 🌙 **Next Themes** - Dark/Light mode support
 - 📱 **Lucide React** - Beautiful icons
 
 ### **Backend & Database**
@@ -86,13 +84,12 @@
 ### **AI & Processing**
 - 🧠 **Google Gemini 2.5 Flash** - Text generation and analysis
 - 📄 **PDF Processing** - Text extraction and analysis
-- 🔍 **Natural Language Processing** - Resume and job matching
+- 🔍 **Improve with AI and ATS checker like functionality** - Resume and job matching
 
 ### **Development & Deployment**
 - 📦 **npm/pnpm** - Package management
 - 🔧 **ESLint** - Code linting
 - 🚀 **Vercel** - Deployment and hosting
-- 🐳 **Docker Ready** - Containerization support
 
 ---
 
@@ -379,7 +376,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📧 **Email**: abhay999939@gmail.com
+- 📧 **Email**: abhay987123sh@gmail.com
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Abhay9999Sh/sensai/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/Abhay9999Sh/sensai/discussions)
 
